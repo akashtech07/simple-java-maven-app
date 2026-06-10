@@ -1,28 +1,45 @@
 pipeline {
     agent any
-    options {
-        skipStagesAfterUnstable()
+
+    environment {
+        PATH = "/opt/maven/bin:${env.PATH}"
     }
+
     stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'master',
+                    url: 'https://github.com/akashtech07/simple-java-maven-app.git'
+            }
+        }
+
+        stage('Check Maven') {
+            steps {
+                sh 'mvn -version'
+            }
+        }
+
         stage('Build') {
             steps {
-                sh 'mvn -B -DskipTests clean package'
+                sh 'mvn clean package'
             }
         }
-        stage('Test') {
+
+        stage('Archive Artifact') {
             steps {
-                sh 'mvn test'
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                }
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
-        stage('Deliver') { 
-            steps {
-                sh './jenkins/scripts/deliver.sh' 
-            }
+    }
+
+    post {
+        success {
+            echo 'Build completed successfully!'
+        }
+
+        failure {
+            echo 'Build failed!'
         }
     }
 }
